@@ -13,12 +13,8 @@ from PyQt5.QtCore import QCoreApplication, QTimer, QSize, Qt
 from PyQt5.QtGui import QFont, QIcon, QPalette
 from PyQt5.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QSpacerItem,
                              QHBoxLayout, QSizePolicy, QLabel, QApplication,
-                             QFrame, QPushButton, QMessageBox)
+                             QFrame, QPushButton)
 from PyQt5.Qt import QSound
-
-# 线程模块
-import threading
-import DataConnection
 
 
 class BrakeMonitor(QMainWindow):
@@ -109,7 +105,6 @@ class BrakeMonitor(QMainWindow):
         # 数据点个数
         self.idx = 0
         # 记录数据
-        self.buffer_data = []
         self.data_list = []
         for i in range(self.count_paras):
             self.data_list.append(array.array('d'))
@@ -137,23 +132,6 @@ class BrakeMonitor(QMainWindow):
         self.raise_new_warning = False
         self.btn_check_fault.setStyleSheet(self.btn_default_stylesheet)
 
-    # 创建socket连接
-    def creat_data_socket(self):
-        # 设置连接端口
-        dcn = DataConnection(18334)
-        # dcn = DataConnection(9999)
-        try:
-            dcn.Connection()
-            t = threading.Thread(target=self.plot_data, args=(dcn, ))
-            t.start()
-        except ConnectionRefusedError:
-            dcn.closeConnect()
-            QMessageBox.information(self,
-                                    QCoreApplication.translate('BrakeMonitor', '网络连接提示'),
-                                    QCoreApplication.translate('BrakeMonitor', '无法连接服务器！'))
-        finally:
-            pass
-
     # 播放告警音
     def ctrl_warning_sound(self, status):
         # 如果为真则播放
@@ -167,15 +145,12 @@ class BrakeMonitor(QMainWindow):
             self.warning_sound.setLoops(0)
 
     # 显示监控画面，并进行数据处理，判断告警信息
-    def plot_data(self, dcn):
-        while True:
-            para_dict = dcn.recvData()
-            self.process_socket_data(para_dict)
+    def plot_data(self):
         raise_warning = False
         # 根据用户需要制定相应的显示方式
         if isinstance(self.test_data, pd.DataFrame) and len(self.test_data) > self.idx + 1:
             warning_logic_data = self.test_data.iloc[self.idx, :]
-            self.label_time.setText('时间 : ' + warning_logic_data['Time'])
+            self.label_time.setText('时间 : ' + warning_logic_data['TIME'])
             if warning_logic_data.loc['RDIU6_BCMU_312_01'] < 3\
                     or warning_logic_data.loc['LGCU1_RDIU8_275_01_12'] == 0:
                 self.label_left_out.setStyleSheet('QLabel {background-color: green}')
@@ -239,19 +214,6 @@ class BrakeMonitor(QMainWindow):
 
         self.idx += 1
 
-    def process_socket_data(self, para_dict):
-        if para_dict:
-            # 如果处理不及时，缓冲区可能变的很长，即延迟很严重
-            self.buffer_data.append(para_dict)
-        print(len(self.buffer_data))
-        try:
-            str_dict_data = self.buffer_data.pop(0)
-            if self.is_writing_data:
-                self.datafile.write(str(str_dict_data) + '\n')
-            # list_data = []
-        except:
-            pass
-
     # 处理出现的告警
     def raise_fault(self):
         if not self.raise_new_warning:
@@ -260,20 +222,33 @@ class BrakeMonitor(QMainWindow):
 
     # 读数据
     def read_data(self):
-        gear_paras = ['Time', 'LGCU1_RDIU8_275_01_12']
-        brake_paras = ['RDIU6_BCMU_312_01','BCMU_RDIU6_4_01', 'BCMU_RDIU6_6_01',
-                       'BCMU_RDIU6_5_01', 'BCMU_RDIU6_7_01']
-        print('in')
-        gear_paras_data = pd.read_csv('E:\\FTD\\FTPD-C919-10103-PD-190512-G-01-LGS-429001-16.txt', sep='\s+',
-                                      usecols=gear_paras, index_col=False, engine='c',
-                                      skip_blank_lines=True)
-        brake_paras_data = pd.read_csv('E:\\FTD\\FTPD-C919-10103-PD-190512-G-01-BRK-429001-32.txt', sep='\s+',
-                                       usecols=brake_paras, index_col=False, engine='c',
-                                       skip_blank_lines=True)
-        bp_cols = [i for i in range(len(brake_paras_data)) if i % 2 == 0]
-        brake_paras_data = brake_paras_data.drop(bp_cols)
-        brake_paras_data = brake_paras_data.reset_index(drop=True)
-        self.test_data = pd.concat([gear_paras_data, brake_paras_data], axis=1, join='inner')
+        # gear_paras = ['TIME', 'LGCU1_RDIU8_275_01_12']
+        # brake_paras = ['RDIU6_BCMU_312_01','BCMU_RDIU6_4_01', 'BCMU_RDIU6_6_01',
+        #                'BCMU_RDIU6_5_01', 'BCMU_RDIU6_7_01']
+        # gear_paras_data = pd.read_csv('E:\\FTD\\FTPD-C919-10103-PD-181228-F-01-LGS-429001-16.txt', sep='\s+',
+        #                               usecols=gear_paras, index_col=False, engine='c',
+        #                               skip_blank_lines=True)
+        # brake_paras_data = pd.read_csv('E:\\FTD\\FTPD-C919-10103-PD-181228-F-01-BRK-429001-32.txt', sep='\s+',
+        #                                usecols=brake_paras, index_col=False, engine='c',
+        #                                skip_blank_lines=True)
+        # bp_cols = [i for i in range(len(brake_paras_data)) if i % 2 == 0]
+        # brake_paras_data = brake_paras_data.drop(bp_cols)
+        # brake_paras_data = brake_paras_data.reset_index(drop=True)
+        # self.test_data = pd.concat([gear_paras_data, brake_paras_data], axis=1, join='inner')
+        paras = ['TIME', 'BCMU_A429_Out_1_L4_Left_INBD_Wheelspeed_BCMU',
+                 'BCMU_A429_Out_1_L5_Right_INBD_Wheelspeed_BCMU',
+                 'BCMU_A429_Out_1_L6_Left_OUTBD_Wheelspeed_BCMU',
+                 'BCMU_A429_Out_1_L7_Right_OUTBD_Wheelspeed_BCMU',
+                 'RDIU6_BCMU_312_01']
+        self.test_data = pd.read_csv('E:\\FTD\\FastPlot DataFile 0.txt', sep='\s+',
+                                     usecols=paras, index_col=False, engine='c',
+                                     skip_blank_lines=True)
+        self.test_data.rename(columns={'BCMU_A429_Out_1_L4_Left_INBD_Wheelspeed_BCMU': 'BCMU_RDIU6_4_01',
+                                       'BCMU_A429_Out_1_L5_Right_INBD_Wheelspeed_BCMU': 'BCMU_RDIU6_5_01',
+                                       'BCMU_A429_Out_1_L6_Left_OUTBD_Wheelspeed_BCMU': 'BCMU_RDIU6_6_01',
+                                       'BCMU_A429_Out_1_L7_Right_OUTBD_Wheelspeed_BCMU': 'BCMU_RDIU6_7_01'}, inplace=True)
+        self.test_data['LGCU1_RDIU8_275_01_12'] = 1
+        print(self.test_data)
         print('Read Done.')
 
     # 模拟时间
