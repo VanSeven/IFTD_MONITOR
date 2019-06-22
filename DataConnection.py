@@ -1,30 +1,42 @@
+# -*- coding: utf-8 -*-
+
+# Name: iftd_monitor
+# Description: IFTD实时监控软件
+# Author: Liang Jiayi
+# Date: 2019/6/22
+
 import socket
-import sys
-import os
-import sys
 
 
-class DataConnection:
+class DataConnection(object):
     def __init__(self, port):
         self.port = port
         self.host = socket.gethostname()
-        self.clientSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.clientSocket = None
 
-    def Connection(self):
+    def connection(self):
+        self.clientSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.clientSocket.bind((self.host, self.port))
 
     # 监控大厅连接
-    def recvData(self):
-        recvData = self.clientSocket.recv(524288).decode('utf-8')
+    def recv_data(self):
+        try:
+            get_data = self.clientSocket.recv(524288).decode('utf-8')
+        except OSError:
+            get_data = ''
         # print(recvData)
-        recvDataList = recvData.split(",")
+        get_data_list = get_data.split(",")
         parameters = {}
-        for para in recvDataList:
-            if para != "":
-                name = para.split("#")[0].split(":")[1]
-                value = para.split("#")[1]
+        for para in get_data_list:
+            if para != '':
+                name = para.split('#')[0].split(':')[1]
+                value = para.split('#')[1]
                 parameters[name] = value
         return parameters
-    
-    def closeConnect(self):
-        self.clientSocket.close()
+
+    def close_connect(self):
+        if self.clientSocket is not None:
+            # 关闭接受和发送消息通道，需要在close()之前执行
+            # self.clientSocket.shutdown(2)
+            self.clientSocket.close()
+            self.clientSocket = None
