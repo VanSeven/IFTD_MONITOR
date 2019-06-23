@@ -21,6 +21,7 @@ class SettingDialog(QDialog):
         font.setFamily('微软雅黑')
         self.setFont(font)
         self.resize(260, 150)
+        self.setWindowTitle('Setting')
         self.setWindowIcon(QIcon('window.ico'))
         self.verticalLayout = QVBoxLayout(self)
         self.verticalLayout.setContentsMargins(6, 6, 6, 6)

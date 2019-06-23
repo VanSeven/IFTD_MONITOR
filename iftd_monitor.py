@@ -53,15 +53,20 @@ class IFTDMonitor(QMainWindow):
         self.action_show_left_engine.setText('Left Engine')
         self.action_show_left_engine.setCheckable(True)
         self.action_show_left_engine.setChecked(True)
+        self.action_show_left_engine.setIcon(QIcon('left_engine.ico'))
         self.action_show_right_engine = QAction(self)
         self.action_show_right_engine.setText('Right Engine')
         self.action_show_right_engine.setCheckable(True)
+        self.action_show_right_engine.setIcon(QIcon('left_engine.ico'))
         self.action_setting = QAction(self)
         self.action_setting.setText('Setting')
+        self.action_setting.setIcon(QIcon('setting.ico'))
         self.action_connect_udp = QAction(self)
         self.action_connect_udp.setText('Connect')
+        self.action_connect_udp.setIcon(QIcon('connect.ico'))
         self.action_disconnect_udp = QAction(self)
         self.action_disconnect_udp.setText('Disconnect')
+        self.action_disconnect_udp.setIcon(QIcon('disconnect.ico'))
         self.toolBar.addActions([self.action_show_left_engine,
                                  self.action_show_right_engine,
                                  self.action_connect_udp,
@@ -150,7 +155,7 @@ class IFTDMonitor(QMainWindow):
         # 显示的时间范围，单位秒
         self.show_time_range = 30
         # UDP端口号
-        self.udp_port = 18334
+        self.udp_port = 9291
         # UDP连接
         self.udp_connect = DataConnection(self.udp_port)
         # 线程
@@ -185,7 +190,7 @@ class IFTDMonitor(QMainWindow):
 
         # 连接信号与槽
         self.timer = QTimer()
-        self.timer.timeout.connect(self.get_and_plot_data_in_time)
+        self.timer.timeout.connect(self.read_data_show)
         self.action_read_data.triggered.connect(self.read_data)
         self.action_start.triggered.connect(self.start_plot)
         self.action_show_right_engine.triggered.connect(self.release_engine_view_btn)
@@ -294,34 +299,30 @@ class IFTDMonitor(QMainWindow):
         self.udp_connect.close_connect()
 
     def get_and_plot_data_in_time(self):
-        tmp = self.test_data.iloc[self.idx]
-        start_t = time.time()
-        self.plot_data(tmp)
-        end_t = time.time()
-        print('Waste Time: ', end_t - start_t)
-        self.idx += 1
-        # while not self.stop_plot_thread:
-        #     para_data = self.udp_connect.recv_data()
-        #     start_t = time.time()
-        #     if para_data:
-        #         self.buffer_data.append(para_data)
-        #         print('buffer length : ', len(self.buffer_data))
-        #     if len(self.buffer_data) > 1:
-        #         data = dict()
-        #         str_dict_data = self.buffer_data.pop(0)
-        #         for key in self.para_list:
-        #             if key in str_dict_data:
-        #                 try:
-        #                     data[key] = float(str_dict_data[key])
-        #                 except ValueError:
-        #                     data[key] = str_dict_data[key]
-        #             else:
-        #                 data[key] = 0
-        #         end_t = time.time()
-        #         print('Process Data Waste Time: ', end_t - start_t)
-        #         self.plot_data(data)
-        #     end_t = time.time()
-        #     print('Waste Time: ', end_t - start_t)
+        while not self.stop_plot_thread:
+            para_data = self.udp_connect.recv_data()
+            start_t = time.time()
+            if para_data:
+                self.buffer_data.append(para_data)
+                print('buffer length : ', len(self.buffer_data))
+            if len(self.buffer_data) > 1:
+                data = dict()
+                str_dict_data = self.buffer_data.pop(0)
+                print('str_dict_data', str_dict_data)
+                for key in self.para_list:
+                    if key in str_dict_data:
+                        try:
+                            data[key] = float(str_dict_data[key])
+                        except ValueError:
+                            data[key] = str_dict_data[key]
+                    else:
+                        data[key] = 0
+                end_t = time.time()
+                print('Process Data Waste Time: ', end_t - start_t)
+                # print('data', data)
+                self.plot_data(data)
+            end_t = time.time()
+            print('Waste Time: ', end_t - start_t)
 
     def plot_data(self, data_in_time):
         data_length = 0
@@ -343,7 +344,7 @@ class IFTDMonitor(QMainWindow):
             self.data_list[plot_name] = plot_data
 
         # 显示时间
-        self.status_bar.showMessage(data_in_time['Time'])
+        self.status_bar.showMessage(str(data_in_time['Time']))
 
         # 时间范围的曲线显示
         x_data = np.linspace(0, data_length / self.sample_fre, data_length)
@@ -362,6 +363,11 @@ class IFTDMonitor(QMainWindow):
         except ValueError:
             print('Error info: read_data: ValueError.')
         print('done')
+
+    def read_data_show(self):
+        tmp = self.test_data.iloc[self.idx]
+        self.plot_data(tmp)
+        self.idx += 1
 
     def release_engine_view_btn(self):
         # 接收发出信号的那个对象

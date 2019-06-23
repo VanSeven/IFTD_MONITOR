@@ -21,10 +21,10 @@ class DataConnection(object):
     # 监控大厅连接
     def recv_data(self):
         try:
-            get_data = self.clientSocket.recv(524288).decode('utf-8')
-        except OSError:
+            get_data = self.clientSocket.recv(524288).decode('gbk')
+        except OSError or UnicodeDecodeError:
             get_data = ''
-        # print(recvData)
+        # print(get_data)
         get_data_list = get_data.split(",")
         parameters = {}
         for para in get_data_list:
