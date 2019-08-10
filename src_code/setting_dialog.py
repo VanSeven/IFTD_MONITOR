@@ -9,7 +9,8 @@ from PyQt5.QtCore import QSize
 from PyQt5.QtGui import QFont, QIcon
 from PyQt5.QtWidgets import (QDialog, QHBoxLayout, QVBoxLayout, QApplication,
                              QLabel, QSpinBox, QSizePolicy, QSpacerItem,
-                             QPushButton)
+                             QPushButton, QComboBox)
+import forzen_dir
 
 
 class SettingDialog(QDialog):
@@ -17,12 +18,13 @@ class SettingDialog(QDialog):
     def __init__(self, parent=None, time_range=None, fre=None, port=None):
         super().__init__(parent)
 
+        soft_dir = forzen_dir.app_path()
         font = QFont()
         font.setFamily('微软雅黑')
         self.setFont(font)
         self.resize(260, 150)
         self.setWindowTitle('Setting')
-        self.setWindowIcon(QIcon('window.ico'))
+        self.setWindowIcon(QIcon(soft_dir + r'\icons\window.ico'))
         self.verticalLayout = QVBoxLayout(self)
         self.verticalLayout.setContentsMargins(6, 6, 6, 6)
         self.verticalLayout.setSpacing(4)
@@ -59,6 +61,19 @@ class SettingDialog(QDialog):
         self.spin_box_port.setMaximum(999999)
         self.horizontalLayout_3.addWidget(self.spin_box_port)
         self.verticalLayout.addLayout(self.horizontalLayout_3)
+
+        self.hlayout_decode = QHBoxLayout()
+        self.label_decode = QLabel(self)
+        self.label_decode.setMinimumSize(QSize(110, 25))
+        self.label_decode.setMaximumSize(QSize(110, 25))
+        self.hlayout_decode.addWidget(self.label_decode)
+        self.cb_decode = QComboBox(self)
+        self.cb_decode.setMinimumSize(QSize(0, 25))
+        self.cb_decode.setMaximumSize(QSize(16777215, 25))
+        self.cb_decode.addItems(['gbk', 'utf-8'])
+        self.hlayout_decode.addWidget(self.cb_decode)
+        self.verticalLayout.addLayout(self.hlayout_decode)
+
         self.horizontalLayout_4 = QHBoxLayout()
         spacer_item = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
         self.horizontalLayout_4.addItem(spacer_item)
@@ -75,6 +90,7 @@ class SettingDialog(QDialog):
         self.label_time_range.setText('Time Range')
         self.label_fre.setText('Sample Frequency')
         self.label_port.setText('UDP Port')
+        self.label_decode.setText('UDP Decode')
         self.btn_confirm.setText('Confirm')
         self.btn_concel.setText('Cancel')
 

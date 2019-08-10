@@ -9,9 +9,10 @@ import socket
 
 
 class DataConnection(object):
-    def __init__(self, port):
+    def __init__(self, port, decode_method):
         self.port = port
         self.host = socket.gethostname()
+        self.decode_method = decode_method
         self.clientSocket = None
 
     def connection(self):
@@ -21,7 +22,7 @@ class DataConnection(object):
     # 监控大厅连接
     def recv_data(self):
         try:
-            get_data = self.clientSocket.recv(524288).decode('gbk')
+            get_data = self.clientSocket.recv(524288).decode(self.decode_method)
         except OSError or UnicodeDecodeError:
             get_data = ''
         # print(get_data)
